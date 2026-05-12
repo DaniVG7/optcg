@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Piece TCG — Explorador de Cartas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1008;
+    --gold: #c9922a;
+    --gold-light: #e8c070;
+    --gold-dark: #8a5f10;
+    --parchment: #f5edd8;
+    --parchment-dark: #ede0c4;
+    --ocean: #0d3d6b;
+    --ocean-light: #1a5a9e;
+    --red-straw: #c0392b;
+    --green-sea: #1e6e4a;
+    --purple-grand: #5b2a8e;
+    --black-void: #0e0e0e;
+    --yellow-smile: #d4a017;
+    --blue-water: #1565c0;
+    --multi: #7b3fa0;
+    --radius: 12px;
+    --card-w: 180px;
+    --card-h: 250px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: #0d0d0d;
+    color: var(--parchment);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(13,61,107,0.4) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(139,95,16,0.25) 0%, transparent 60%);
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    border-bottom: 1px solid rgba(201,146,42,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% -20%, rgba(201,146,42,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(201,146,42,0.4);
+    line-height: 1.1;
+  }
+  .logo span { color: var(--parchment); }
+  .subtitle {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    color: rgba(245,237,216,0.55);
+    font-size: 1rem;
+    margin-top: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; min-height: calc(100vh - 140px); }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: 280px;
+    min-width: 280px;
+    padding: 1.5rem 1.25rem;
+    border-right: 1px solid rgba(201,146,42,0.2);
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 140px);
+    position: sticky;
+    top: 0;
+  }
+
+  .filter-section h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(201,146,42,0.2);
+  }
+
+  /* Search */
+  .search-wrap { position: relative; }
+  .search-wrap input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(201,146,42,0.25);
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem 0.55rem 2.2rem;
+    color: var(--parchment);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input::placeholder { color: rgba(245,237,216,0.35); }
+  .search-wrap input:focus { border-color: rgba(201,146,42,0.6); }
+  .search-wrap .search-icon {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(201,146,42,0.5);
+    font-size: 1rem;
+    pointer-events: none;
+  }
+
+  /* Color pills */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .color-pill {
+    border-radius: 6px;
+    padding: 0.3rem 0.2rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .color-pill.active { border-color: var(--gold) !important; transform: scale(1.08); }
+  .cpill-Red    { background: rgba(192,57,43,0.25); color: #f5a0a0; border-color: rgba(192,57,43,0.4); }
+  .cpill-Blue   { background: rgba(21,101,192,0.25); color: #90caf9; border-color: rgba(21,101,192,0.4); }
+  .cpill-Green  { background: rgba(30,110,74,0.25); color: #80d8aa; border-color: rgba(30,110,74,0.4); }
+  .cpill-Yellow { background: rgba(212,160,23,0.25); color: #ffe082; border-color: rgba(212,160,23,0.4); }
+  .cpill-Purple { background: rgba(91,42,142,0.25); color: #ce93d8; border-color: rgba(91,42,142,0.4); }
+  .cpill-Black  { background: rgba(40,40,40,0.7); color: #ccc; border-color: rgba(180,180,180,0.25); }
+  .cpill-Multi  { background: linear-gradient(135deg, rgba(192,57,43,0.3), rgba(21,101,192,0.3)); color: #ffd180; border-color: rgba(201,146,42,0.35); }
+  .cpill-All    { background: rgba(201,146,42,0.12); color: var(--gold-light); border-color: rgba(201,146,42,0.3); }
+
+  /* Select filters */
+  select {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(201,146,42,0.25);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+    color: var(--parchment);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9922a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    transition: border-color 0.2s;
+  }
+  select:focus { border-color: rgba(201,146,42,0.6); }
+  select option { background: #1a1008; color: var(--parchment); }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: rgba(245,237,216,0.6);
+  }
+  .range-row input[type=range] {
+    flex: 1;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+  .range-val {
+    min-width: 38px;
+    text-align: right;
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+  }
+
+  .reset-btn {
+    width: 100%;
+    padding: 0.5rem;
+    background: rgba(201,146,42,0.1);
+    border: 1px solid rgba(201,146,42,0.3);
+    border-radius: 8px;
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { background: rgba(201,146,42,0.2); }
+
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .results-count {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: rgba(245,237,216,0.5);
+    letter-spacing: 0.1em;
+  }
+  .results-count span { color: var(--gold); }
+
+  .sort-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: rgba(245,237,216,0.5);
+  }
+  .sort-row select { width: auto; font-size: 0.85rem; padding: 0.35rem 2rem 0.35rem 0.6rem; }
+
+  /* ── GRID ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+    gap: 16px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: rgba(10,8,4,0.8);
+    border: 1px solid rgba(201,146,42,0.2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .card:hover {
+    transform: translateY(-4px) scale(1.01);
+    border-color: rgba(201,146,42,0.55);
+    box-shadow: 0 8px 30px rgba(201,146,42,0.15);
+  }
+  .card-img-wrap {
+    width: 100%;
+    aspect-ratio: 5/7;
+    background: rgba(20,15,5,0.9);
+    overflow: hidden;
+    position: relative;
+  }
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s;
+  }
+  .card:hover .card-img-wrap img { transform: scale(1.04); }
+  .card-img-wrap .img-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: rgba(201,146,42,0.2);
+  }
+
+  .rarity-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid;
+    letter-spacing: 0.05em;
+  }
+  .rarity-L  { color: #ffd700; border-color: rgba(255,215,0,0.4); }
+  .rarity-SR { color: #ff9800; border-color: rgba(255,152,0,0.4); }
+  .rarity-R  { color: #9c6ef8; border-color: rgba(156,110,248,0.4); }
+  .rarity-UC { color: #42a5f5; border-color: rgba(66,165,245,0.4); }
+  .rarity-C  { color: #aaa; border-color: rgba(170,170,170,0.3); }
+  .rarity-SP, .rarity-SEC { color: #ff6b9d; border-color: rgba(255,107,157,0.4); }
+
+  .color-dot {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.4);
+  }
+
+  .card-info {
+    padding: 0.6rem 0.7rem 0.7rem;
+  }
+  .card-name {
+    font-family: 'Crimson Pro', serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--parchment);
+    line-height: 1.2;
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: rgba(245,237,216,0.45);
+    font-style: italic;
+  }
+  .card-power-cost {
+    display: flex;
+    gap: 8px;
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+  }
+  .stat-tag {
+    background: rgba(201,146,42,0.1);
+    border: 1px solid rgba(201,146,42,0.2);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.03em;
+  }
+  .stat-tag.cost { background: rgba(21,101,192,0.15); border-color: rgba(21,101,192,0.25); color: #90caf9; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #0f0b06;
+    border: 1px solid rgba(201,146,42,0.4);
+    border-radius: 16px;
+    max-width: 820px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .modal-img {
+    width: 340px;
+    min-width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    border-radius: 16px 0 0 16px;
+  }
+  .modal-img img {
+    width: 100%;
+    display: block;
+    object-fit: contain;
+    border-radius: 16px 0 0 0;
+    flex: 1;
+  }
+  .modal-body {
+    flex: 1;
+    padding: 1.5rem 1.25rem;
+    min-width: 220px;
+  }
+  .modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(201,146,42,0.15);
+    border: 1px solid rgba(201,146,42,0.3);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    color: var(--gold-light);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 0.2rem;
+    padding-right: 2rem;
+    line-height: 1.3;
+  }
+  .modal-set {
+    font-style: italic;
+    font-size: 0.9rem;
+    color: rgba(245,237,216,0.4);
+    margin-bottom: 1rem;
+  }
+  .modal-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+  .mstat {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,146,42,0.15);
+    border-radius: 8px;
+    padding: 0.4rem 0.65rem;
+  }
+  .mstat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,237,216,0.4);
+    font-family: 'Cinzel', serif;
+    margin-bottom: 0.1rem;
+  }
+  .mstat-val {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--parchment);
+  }
+  .modal-text-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.35rem;
+  }
+  .modal-text {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: rgba(245,237,216,0.8);
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid rgba(201,146,42,0.3);
+    padding: 0.6rem 0.75rem;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1rem;
+  }
+  .price-row {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(201,146,42,0.15);
+    font-size: 0.85rem;
+  }
+  .price-item { display: flex; flex-direction: column; gap: 2px; }
+  .price-item span:first-child { font-size: 0.65rem; color: rgba(245,237,216,0.4); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Cinzel', serif; }
+  .price-item span:last-child { color: var(--gold-light); font-weight: 600; font-size: 1rem; }
+
+  /* loading / empty */
+  .loading-state, .empty-state {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: rgba(245,237,216,0.3);
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+  }
+  .loading-state .spinner {
+    width: 40px;
+    height: 40px;
+    border: 2px solid rgba(201,146,42,0.15);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 2rem 0 1rem;
+    flex-wrap: wrap;
+  }
+  .page-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(201,146,42,0.2);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    color: rgba(245,237,216,0.6);
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .page-btn:hover, .page-btn.active {
+    background: rgba(201,146,42,0.18);
+    border-color: rgba(201,146,42,0.5);
+    color: var(--gold-light);
+  }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* color dot map */
+  .dot-Red    { background: #e74c3c; }
+  .dot-Blue   { background: #2196f3; }
+  .dot-Green  { background: #27ae60; }
+  .dot-Yellow { background: #f1c40f; }
+  .dot-Purple { background: #9b59b6; }
+  .dot-Black  { background: #555; }
+  .dot-Multi  { background: conic-gradient(#e74c3c 0deg 90deg, #2196f3 90deg 180deg, #27ae60 180deg 270deg, #f1c40f 270deg 360deg); }
+
+  @media (max-width: 700px) {
+    .app { flex-direction: column; }
+    aside { width: 100%; max-height: none; position: static; }
+    .modal { flex-direction: column; }
+    .modal-img { width: 100%; }
+    .modal-img img { border-radius: 16px 16px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ONE PIECE <span>TCG</span></div>
+  <div class="subtitle">Explorador de Cartas — Todos los Sets</div>
+</header>
+
+<div class="app">
+  <aside>
+    <!-- Search -->
+    <div class="filter-section">
+      <h3>Buscar</h3>
+      <div class="search-wrap">
+        <span class="search-icon">⚓</span>
+        <input type="text" id="searchInput" placeholder="Nombre de carta...">
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="filter-section">
+      <h3>Color</h3>
+      <div class="color-grid">
+        <div class="color-pill cpill-All active" data-color="All">Todos</div>
+        <div class="color-pill cpill-Red" data-color="Red">Rojo</div>
+        <div class="color-pill cpill-Blue" data-color="Blue">Azul</div>
+        <div class="color-pill cpill-Green" data-color="Green">Verde</div>
+        <div class="color-pill cpill-Yellow" data-color="Yellow">Amarillo</div>
+        <div class="color-pill cpill-Purple" data-color="Purple">Púrpura</div>
+        <div class="color-pill cpill-Black" data-color="Black">Negro</div>
+        <div class="color-pill cpill-Multi" data-color="Multi">Multi</div>
+      </div>
+    </div>
+
+    <!-- Tipo -->
+    <div class="filter-section">
+      <h3>Tipo</h3>
+      <select id="typeFilter">
+        <option value="">Todos los tipos</option>
+        <option value="Leader">Leader</option>
+        <option value="Character">Character</option>
+        <option value="Event">Event</option>
+        <option value="Stage">Stage</option>
+      </select>
+    </div>
+
+    <!-- Rareza -->
+    <div class="filter-section">
+      <h3>Rareza</h3>
+      <select id="rarityFilter">
+        <option value="">Todas las rarezas</option>
+        <option value="SEC">SEC — Secret</option>
+        <option value="SP">SP — Special</option>
+        <option value="SR">SR — Super Rare</option>
+        <option value="R">R — Rare</option>
+        <option value="UC">UC — Uncommon</option>
+        <option value="C">C — Common</option>
+      </select>
+    </div>
+
+    <!-- Atributo -->
+    <div class="filter-section">
+      <h3>Atributo</h3>
+      <select id="attributeFilter">
+        <option value="">Todos</option>
+        <option value="Slash">Slash</option>
+        <option value="Strike">Strike</option>
+        <option value="Ranged">Ranged</option>
+        <option value="Special">Special</option>
+        <option value="Wisdom">Wisdom</option>
+      </select>
+    </div>
+
+    <!-- Set -->
+    <div class="filter-section">
+      <h3>Set</h3>
+      <select id="setFilter">
+        <option value="">Todos los sets</option>
+      </select>
+    </div>
+
+    <!-- Coste -->
+    <div class="filter-section">
+      <h3>Coste máximo</h3>
+      <div class="range-row">
+        <span>0</span>
+        <input type="range" id="costFilter" min="0" max="10" value="10" step="1">
+        <span class="range-val" id="costVal">10</span>
+      </div>
+    </div>
+
+    <!-- Poder -->
+    <div class="filter-section">
+      <h3>Poder mínimo</h3>
+      <div class="range-row">
+        <span>0</span>
+        <input type="range" id="powerFilter" min="0" max="15000" value="0" step="1000">
+        <span class="range-val" id="powerVal">0</span>
+      </div>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">✦ Limpiar filtros ✦</button>
+  </aside>
+
+  <main>
+    <div class="top-bar">
+      <div class="results-count" id="resultsCount">Cargando cartas...</div>
+      <div class="sort-row">
+        <span>Ordenar:</span>
+        <select id="sortFilter">
+          <option value="id-asc">ID ↑</option>
+          <option value="id-desc">ID ↓</option>
+          <option value="name-asc">Nombre ↑</option>
+          <option value="name-desc">Nombre ↓</option>
+          <option value="power-desc">Poder ↓</option>
+          <option value="power-asc">Poder ↑</option>
+          <option value="cost-asc">Coste ↑</option>
+          <option value="cost-desc">Coste ↓</option>
+          <option value="price-desc">Precio ↓</option>
+          <option value="price-asc">Precio ↑</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        Surcando el Grand Line...
+      </div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal-img">
+      <img id="modalImg" src="" alt="">
+      <div id="modalAlterNav" style="display:none;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:rgba(0,0,0,0.5);border-top:1px solid rgba(201,146,42,0.2);">
+        <button id="modalPrevAlter" style="background:rgba(201,146,42,0.12);border:1px solid rgba(201,146,42,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--gold-light);font-family:'Cinzel',serif;font-size:0.7rem;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,146,42,0.25)'" onmouseout="this.style.background='rgba(201,146,42,0.12)'">‹ Ant.</button>
+        <span id="modalAlterInfo" style="font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(245,237,216,0.5);letter-spacing:0.1em;"></span>
+        <button id="modalNextAlter" style="background:rgba(201,146,42,0.12);border:1px solid rgba(201,146,42,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--gold-light);font-family:'Cinzel',serif;font-size:0.7rem;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,146,42,0.25)'" onmouseout="this.style.background='rgba(201,146,42,0.12)'">Sig. ›</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-set" id="modalSet"></div>
+      <div class="modal-stats" id="modalStats"></div>
+      <div class="modal-text-label">Efecto</div>
+      <div class="modal-text" id="modalText"></div>
+      <div class="price-row" id="modalPrices"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://optcgapi.com/api';
+const PAGE_SIZE = 40;
+
+let allCards = [];
+let filtered = [];
+let page = 1;
+let activeColors = new Set();
+let isLoading = false;
+
+const COLOR_DOT = {Red:'#e74c3c',Blue:'#2196f3',Green:'#27ae60',Yellow:'#f1c40f',Purple:'#9b59b6',Black:'#666',Multi:'#a07bd8'};
+
+// Ordena sets: primero OP-XX, luego ST-XX, luego EB-XX, luego el resto, todo numérico
+function sortSetName(a, b) {
+  const rank = s => s.startsWith('OP') ? 0 : s.startsWith('ST') ? 1 : s.startsWith('EB') ? 2 : 3;
+  const num = s => parseInt((s.match(/\d+/) || [0])[0]);
+  const ra = rank(a), rb = rank(b);
+  if (ra !== rb) return ra - rb;
+  return num(a) - num(b);
+}
+
+async function fetchAllSetCards() {
+  const res = await fetch(`${API}/allSetCards/`);
+  return res.json();
+}
+
+async function fetchAllSTCards() {
+  try {
+    const res = await fetch(`${API}/allSTCards/`);
+    return res.json();
+  } catch { return []; }
+}
+
+async function loadCards() {
+  isLoading = true;
+  document.getElementById('cardsGrid').innerHTML = '<div class="loading-state"><div class="spinner"></div>Surcando el Grand Line...</div>';
+  try {
+    const [sets, sts] = await Promise.all([fetchAllSetCards(), fetchAllSTCards()]);
+    allCards = [...(Array.isArray(sets) ? sets : []), ...(Array.isArray(sts) ? sts : [])];
+    populateSetFilter();
+    applyFilters();
+  } catch (e) {
+    document.getElementById('cardsGrid').innerHTML = '<div class="empty-state">⚠ Error al cargar las cartas. Comprueba tu conexión.</div>';
+  }
+  isLoading = false;
+}
+
+function populateSetFilter() {
+  const setMap = {};
+  allCards.forEach(c => { if (c.set_name && c.set_id) setMap[c.set_id] = c.set_name; });
+  const sortedIds = Object.keys(setMap).sort(sortSetName);
+  const sel = document.getElementById('setFilter');
+  sortedIds.forEach(id => {
+    const o = document.createElement('option');
+    o.value = setMap[id]; o.textContent = `${id} — ${setMap[id]}`;
+    sel.appendChild(o);
+  });
+}
+
+function applyFilters() {
+  const search  = document.getElementById('searchInput').value.toLowerCase();
+  const type    = document.getElementById('typeFilter').value;
+  const rarity  = document.getElementById('rarityFilter').value;
+  const attr    = document.getElementById('attributeFilter').value;
+  const setName = document.getElementById('setFilter').value;
+  const maxCost = parseInt(document.getElementById('costFilter').value);
+  const minPow  = parseInt(document.getElementById('powerFilter').value);
+  const sort    = document.getElementById('sortFilter').value;
+
+  // Paso 1: agrupar versiones alternativas (parallel) por card_set_id
+  // Todas las cartas con el mismo card_set_id son la misma carta (base + parallels)
+  const alterGroups = {};
+  allCards.forEach(c => {
+    const k = c.card_set_id || c.card_image_id || '';
+    if (!alterGroups[k]) alterGroups[k] = [];
+    alterGroups[k].push(c);
+  });
+
+  // Una entrada por grupo: la carta base es la que no tiene _p en card_image_id
+  const withAlters = Object.values(alterGroups).map(g => {
+    // Ordenar: bases primero, parallels después
+    g.sort((a, b) => {
+      const ap = /_p\d+/.test(a.card_image_id || '') ? 1 : 0;
+      const bp = /_p\d+/.test(b.card_image_id || '') ? 1 : 0;
+      return ap - bp;
+    });
+    const base = g[0];
+    base._alters = g;
+    return base;
+  });
+
+  // Paso 2: deduplicar reimpresiones entre sets (misma carta publicada en OP y en EB)
+  // Clave: color + texto limpio (sin disclaimer) + tipo + poder + coste
+  const cleanCardName = name => (name||'').replace(/\s*-\s*[A-Z]{2}\d+-\d+.*$/, '').trim();
+  const cleanText = txt => (txt||'')
+    .replace(/Disclaimer:.*$/si, '')  // quitar disclaimer que añade la API a reimpresiones
+    .trim().replace(/\s+/g, ' ');
+  const cardKey = c => {
+    const txt = cleanText(c.card_text);
+    const color = c.card_color || '';
+    if (txt.length > 10) return `${color}|${c.card_type||''}|${c.card_power||''}|${c.card_cost??''}|${txt}`;
+    return `NAME|${color}|${cleanCardName(c.card_name)}|${c.card_type||''}|${c.card_power||''}`;
+  };
+  const seen = {};
+  withAlters.forEach(c => {
+    const k = cardKey(c);
+    if (!seen[k]) {
+      seen[k] = c;
+      c._allSets = [c.card_set_id];
+    } else {
+      seen[k]._allSets = seen[k]._allSets || [];
+      if (!seen[k]._allSets.includes(c.card_set_id)) seen[k]._allSets.push(c.card_set_id);
+      const existingIds = new Set(seen[k]._alters.map(x => x.card_image_id));
+      (c._alters || [c]).forEach(a => {
+        if (!existingIds.has(a.card_image_id)) {
+          seen[k]._alters.push(a);
+          existingIds.add(a.card_image_id);
+        }
+      });
+    }
+  });
+  const deduped = Object.values(seen);
+
+  filtered = deduped.filter(c => {
+    // Búsqueda de texto: busca en nombre, card_set_id y set_name de todos los alters
+    if (search) {
+      const q = search.toLowerCase();
+      const allAlters = c._alters || [c];
+      const matchName = (c.card_name||'').toLowerCase().includes(q);
+      const matchSet  = allAlters.some(a =>
+        (a.card_set_id||'').toLowerCase().includes(q) ||
+        (a.set_name||'').toLowerCase().includes(q)
+      );
+      if (!matchName && !matchSet) return false;
+    }
+    if (activeColors.size > 0 && !activeColors.has(c.card_color)) return false;
+    if (type && c.card_type !== type) return false;
+    if (rarity && c.rarity !== rarity) return false;
+    if (attr && c.attribute !== attr) return false;
+    if (setName) {
+      const allAlters = c._alters || [c];
+      const matchingAlter = allAlters.find(a => a.set_name === setName || a.card_set_id === setName);
+      if (!matchingAlter) return false;
+      c._previewAlterIdx = allAlters.indexOf(matchingAlter);
+    } else {
+      c._previewAlterIdx = 0;
+    }
+    if (c.card_cost !== null && c.card_cost !== undefined && parseInt(c.card_cost) > maxCost) return false;
+    if (c.card_power && parseInt(c.card_power) < minPow) return false;
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (sort === 'name-asc')   return (a.card_name||'').localeCompare(b.card_name||'');
+    if (sort === 'name-desc')  return (b.card_name||'').localeCompare(a.card_name||'');
+    if (sort === 'power-desc') return (parseInt(b.card_power)||0) - (parseInt(a.card_power)||0);
+    if (sort === 'power-asc')  return (parseInt(a.card_power)||0) - (parseInt(b.card_power)||0);
+    if (sort === 'cost-asc')   return (parseInt(a.card_cost)||0) - (parseInt(b.card_cost)||0);
+    if (sort === 'cost-desc')  return (parseInt(b.card_cost)||0) - (parseInt(a.card_cost)||0);
+    if (sort === 'price-desc') return (b.market_price||0) - (a.market_price||0);
+    if (sort === 'price-asc')  return (a.market_price||0) - (b.market_price||0);
+    if (sort === 'id-desc')    return (b.card_set_id||'').localeCompare(a.card_set_id||'');
+    return (a.card_set_id||'').localeCompare(b.card_set_id||''); // id-asc por defecto
+  });
+
+  page = 1;
+  render();
+}
+
+function render() {
+  const grid = document.getElementById('cardsGrid');
+  const total = filtered.length;
+  const start = (page - 1) * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+
+  document.getElementById('resultsCount').innerHTML =
+    `<span>${total.toLocaleString()}</span> cartas encontradas`;
+
+  if (!slice.length) {
+    grid.innerHTML = '<div class="empty-state">⚓ No se encontraron cartas con esos filtros</div>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = slice.map(c => cardHTML(c)).join('');
+
+  grid.querySelectorAll('.card').forEach((el, i) => {
+    const c = slice[i];
+    const startIdx = c._previewAlterIdx || 0;
+    el.addEventListener('click', () => openModal(c._alters || [c], startIdx));
+  });
+
+  renderPagination(total);
+}
+
+function cardHTML(c) {
+  const alters = c._alters || [c];
+  const previewIdx = c._previewAlterIdx || 0;
+  const preview = alters[previewIdx] || alters[0];
+
+  const rClass = 'rarity-' + (preview.rarity || c.rarity || 'C');
+  const dotColor = COLOR_DOT[preview.card_color || c.card_color] || '#888';
+  const imgSrc = preview.card_image || '';
+  const power = (preview.card_power || c.card_power) ? parseInt(preview.card_power || c.card_power).toLocaleString() : null;
+  const cost  = (preview.card_cost ?? c.card_cost) !== null && (preview.card_cost ?? c.card_cost) !== undefined ? (preview.card_cost ?? c.card_cost) : null;
+  const displayName = (preview.card_name || c.card_name || '—').replace(/\s*-\s*[A-Z]{2}\d+-\d+.*$/, '');
+  const displaySet = preview.card_set_id || c.card_set_id || '';
+
+  const alterBadge = alters.length > 1
+    ? `<div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.75);border:1px solid rgba(201,146,42,0.5);border-radius:4px;padding:1px 6px;font-family:'Cinzel',serif;font-size:0.55rem;color:var(--gold-light);letter-spacing:0.05em">${alters.length} ver.</div>`
+    : '';
+
+  return `<div class="card">
+    <div class="card-img-wrap">
+      ${imgSrc
+        ? `<img src="${imgSrc}" alt="${displayName}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+        : ''}
+      <div class="img-placeholder" style="${imgSrc ? 'display:none' : ''}">⚓</div>
+      <div class="rarity-badge ${rClass}">${preview.rarity || c.rarity || '?'}</div>
+      <div class="color-dot" style="background:${dotColor}"></div>
+      ${alterBadge}
+    </div>
+    <div class="card-info">
+      <div class="card-name">${displayName}</div>
+      <div class="card-meta">
+        <span>${preview.card_type || c.card_type || ''}</span>
+        <span>${displaySet}</span>
+      </div>
+      <div class="card-power-cost">
+        ${power ? `<span class="stat-tag">⚔ ${power}</span>` : ''}
+        ${cost  !== null ? `<span class="stat-tag cost">◈ ${cost}</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPagination(total) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" ${page===1?'disabled':''} onclick="changePage(${page-1})">‹ Anterior</button>`;
+  const range = [];
+  for (let i = 1; i <= pages; i++) {
+    if (i===1 || i===pages || Math.abs(i-page)<=2) range.push(i);
+    else if (range[range.length-1] !== '…') range.push('…');
+  }
+  range.forEach(p => {
+    if (p === '…') html += `<span class="page-btn" style="pointer-events:none">…</span>`;
+    else html += `<button class="page-btn ${p===page?'active':''}" onclick="changePage(${p})">${p}</button>`;
+  });
+  html += `<button class="page-btn" ${page===pages?'disabled':''} onclick="changePage(${page+1})">Siguiente ›</button>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function changePage(p) {
+  page = p;
+  render();
+  document.querySelector('main').scrollTo(0, 0);
+  window.scrollTo(0, 0);
+}
+
+let modalAlters = [];
+let modalIdx = 0;
+
+function openModal(alters, idx) {
+  modalAlters = alters;
+  modalIdx = idx;
+  renderModal();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function renderModal() {
+  const c = modalAlters[modalIdx];
+  const total = modalAlters.length;
+
+  document.getElementById('modalImg').src = c.card_image || '';
+  document.getElementById('modalImg').alt = c.card_name || '';
+
+  // Nombre: usar el de la carta base (sin el sufijo " - EBXX-XXX (Re...)")
+  const cleanName = (modalAlters[0].card_name || c.card_name || '—').replace(/\s*-\s*[A-Z]{2}\d+-\d+.*$/, '');
+  document.getElementById('modalTitle').textContent = cleanName;
+
+  // Set: mostrar el de la versión actual + todos los sets donde existe
+  const allSets = modalAlters[0]._allSets || [c.card_set_id];
+  const currentSetId = c.card_set_id || '';
+  const otherSets = allSets.filter(s => s !== currentSetId);
+  let setLine = `${c.set_name || ''} · ${currentSetId}`;
+  if (otherSets.length > 0) setLine += `  (también en: ${otherSets.join(', ')})`;
+  document.getElementById('modalSet').textContent = setLine;
+
+  // Flechas alters: mostrar set ID de la versión actual
+  const nav = document.getElementById('modalAlterNav');
+  if (total > 1) {
+    nav.style.display = 'flex';
+    document.getElementById('modalAlterInfo').textContent = `${currentSetId || 'Ver. ' + (modalIdx + 1)}  ·  ${modalIdx + 1}/${total}`;
+    document.getElementById('modalPrevAlter').disabled = modalIdx === 0;
+    document.getElementById('modalNextAlter').disabled = modalIdx === total - 1;
+  } else {
+    nav.style.display = 'none';
+  }
+
+  const stats = [
+    ['Tipo', c.card_type],
+    ['Color', c.card_color],
+    ['Rareza', c.rarity],
+    ['Atributo', c.attribute],
+    ['Poder', c.card_power ? parseInt(c.card_power).toLocaleString() : '—'],
+    ['Coste', c.card_cost !== null && c.card_cost !== undefined ? c.card_cost : '—'],
+    ['Contador', c.counter_amount || '—'],
+    ['Vida', c.life || '—'],
+  ].filter(([,v]) => v);
+
+  document.getElementById('modalStats').innerHTML = stats.map(([l,v]) =>
+    `<div class="mstat"><div class="mstat-label">${l}</div><div class="mstat-val">${v}</div></div>`
+  ).join('');
+
+  document.getElementById('modalText').textContent = c.card_text || 'Sin texto de efecto.';
+
+  const prices = [];
+  if (c.market_price)    prices.push(['Precio mercado', `$${c.market_price.toFixed(2)}`]);
+  if (c.inventory_price) prices.push(['Precio inv.', `$${c.inventory_price.toFixed(2)}`]);
+  document.getElementById('modalPrices').innerHTML = prices.map(([l,v]) =>
+    `<div class="price-item"><span>${l}</span><span>${v}</span></div>`
+  ).join('');
+
+  if (c.sub_types) {
+    document.getElementById('modalPrices').innerHTML +=
+      `<div class="price-item" style="margin-left:auto"><span>Subtipos</span><span style="font-size:0.8rem;color:rgba(245,237,216,0.6)">${c.sub_types}</span></div>`;
+  }
+}
+
+// Color pills — multiselect
+document.querySelectorAll('.color-pill').forEach(el => {
+  el.addEventListener('click', () => {
+    const color = el.dataset.color;
+    if (color === 'All') {
+      activeColors.clear();
+      document.querySelectorAll('.color-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+    } else {
+      document.querySelector('.cpill-All').classList.remove('active');
+      if (activeColors.has(color)) {
+        activeColors.delete(color);
+        el.classList.remove('active');
+        if (activeColors.size === 0) document.querySelector('.cpill-All').classList.add('active');
+      } else {
+        activeColors.add(color);
+        el.classList.add('active');
+      }
+    }
+    applyFilters();
+  });
+});
+
+// Inputs
+['searchInput','typeFilter','rarityFilter','attributeFilter','setFilter','sortFilter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilters);
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+document.getElementById('costFilter').addEventListener('input', function() {
+  document.getElementById('costVal').textContent = this.value;
+  applyFilters();
+});
+document.getElementById('powerFilter').addEventListener('input', function() {
+  document.getElementById('powerVal').textContent = parseInt(this.value).toLocaleString();
+  applyFilters();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('typeFilter').value = '';
+  document.getElementById('rarityFilter').value = '';
+  document.getElementById('attributeFilter').value = '';
+  document.getElementById('setFilter').value = '';
+  document.getElementById('costFilter').value = 10;
+  document.getElementById('powerFilter').value = 0;
+  document.getElementById('costVal').textContent = '10';
+  document.getElementById('powerVal').textContent = '0';
+  document.getElementById('sortFilter').value = 'id-asc';
+  document.querySelectorAll('.color-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('.cpill-All').classList.add('active');
+  activeColors.clear();
+  applyFilters();
+});
+
+document.getElementById('modalClose').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('open');
+});
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+document.getElementById('modalPrevAlter').addEventListener('click', () => {
+  if (modalIdx > 0) { modalIdx--; renderModal(); }
+});
+document.getElementById('modalNextAlter').addEventListener('click', () => {
+  if (modalIdx < modalAlters.length - 1) { modalIdx++; renderModal(); }
+});
+
+loadCards();
+</script>
+</body>
+</html>
